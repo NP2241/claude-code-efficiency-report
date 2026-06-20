@@ -1,0 +1,141 @@
+# CCER Dogfood Scenario Report
+
+**Repository:** {{ trace.repo_name }}  
+**Remote:** {{ trace.github_remote or "n/a" }}  
+**Generated:** {{ generated_at }}
+
+---
+
+## What this means for the startup
+
+This section translates the stage-by-stage breakdown below into what you'd actually **say**
+to someone evaluating CCER — an eng manager, a founder, or an investor.
+
+### The one-liner
+
+{{ insights.elevator_pitch }}
+
+### What you'd tell an engineering manager
+
+{{ insights.manager_brief }}
+
+**Actionable takeaways:**
+
+{% for rec in insights.recommendations %}
+- {{ rec }}
+{% endfor %}
+
+### What you'd tell an investor or early customer
+
+{{ insights.investor_brief }}
+
+### Key findings from this run
+
+{% for finding in insights.key_findings %}
+- {{ finding }}
+{% endfor %}
+
+### Where the money went
+
+| Category | Est. cost | Tokens | Share of spend |
+|----------|-----------|--------|----------------|
+{% for b in insights.spend_buckets %}
+| {{ b.label }} | ${{ "%.2f"|format(b.cost_usd) }} | {{ "{:,}".format(b.tokens) }} | {{ "%.0f"|format(b.pct_of_total) }}% |
+{% endfor %}
+| **Total (unique commits)** | **${{ "%.2f"|format(trace.total_cost_usd) }}** | **{{ "{:,}".format(trace.total_tokens) }}** | **100%** |
+
+**Efficiency tiers across commits:** {{ insights.efficiency_counts.get("High", 0) }} High · {{ insights.efficiency_counts.get("Medium", 0) }} Medium · {{ insights.efficiency_counts.get("Low", 0) }} Low
+
+> **The pitch in plain terms:** Anthropic tells you how many tokens you burned. Git tells you what
+> changed. CCER connects the two and tells you whether the burn was productive, rework, or waste —
+> automatically, after every commit, with evidence a non-technical manager can read in under 10 seconds.
+
+---
+
+## Scenario rollup
+
+| Metric | Value |
+|--------|-------|
+| Stages defined | {{ trace.stages | length }} |
+| Commits audited | {{ trace.audited_commits }} |
+| Total tokens (unique commits, all windows) | {{ "{:,}".format(trace.total_tokens) }} |
+| Total estimated cost | ${{ "%.4f"|format(trace.total_cost_usd) }} |
+| Build spend (stages 1–4) | ${{ "%.2f"|format(insights.build_cost_usd) }} |
+| Rework spend (stages 5–7, 13–14) | ${{ "%.2f"|format(insights.rework_cost_usd) }} ({{ "%.0f"|format(insights.rework_pct) }}%) |
+| Claude sessions | {{ trace.session_ids | length }} |
+| Rework flags fired | {% if trace.rework_flag_counts %}{% for k, v in trace.rework_flag_counts.items() %}{{ k }} ({{ v }}){% if not loop.last %}, {% endif %}{% endfor %}{% else %}none{% endif %} |
+
+**What we tested:** automatic transcript ingestion, per-commit token↔diff correlation, model
+breakdown and switches, rework heuristics (fix/revert/churn), Opus overspend penalty, time-slicing
+across one long session, zero-token commits, a three-commit bug arc, and historical `--commit` replay.
+
+**Session IDs:** {{ trace.session_ids | join(", ") if trace.session_ids else "none" }}
+
+---
+
+## Stage timeline
+
+| Stage | Title | Commit | Tokens | Cost | Efficiency | Rework |
+|-------|-------|--------|--------|------|------------|--------|
+{%- for st in trace.stages %}
+| {{ st.stage.stage_id }} | {{ st.stage.title }} | {% if st.commit %}{{ st.commit.subject[:48] }}{% if st.commit.subject | length > 48 %}…{% endif %}{% else %}—{% endif %} | {% if st.report %}{{ "{:,}".format(st.report.usage.total_tokens) }}{% else %}—{% endif %} | {% if st.report %}${{ "%.4f"|format(st.report.usage.estimated_cost_usd) }}{% else %}—{% endif %} | {% if st.report %}{{ st.report.efficiency.tier }}{% else %}—{% endif %} | {% if st.report and st.report.rework_flags %}{% for f in st.report.rework_flags %}{{ f.rule_id }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}—{% endif %} |
+{%- endfor %}
+
+---
+
+## Full trace (stage by stage)
+
+{% from "_commit_summary.md.j2" import commit_block %}
+
+{% for st in trace.stages %}
+
+### Stage {{ st.stage.stage_id }} — {{ st.stage.title }}
+
+**Goal:** {{ st.stage.goal }}  
+**Expected:** {{ st.stage.expected }}  
+**Scenario:** {{ st.stage.scenario_note }}  
+**Claude used:** {{ "yes" if st.stage.uses_claude else "no (script-only)" }}
+
+{% if st.commit %}
+**Matched commit:** `{{ st.commit.sha[:8] }}` — {{ st.commit.subject }}
+{% elif st.skipped_reason %}
+**Status:** {{ st.skipped_reason }}
+{% else %}
+**Status:** No commit matched.
+{% endif %}
+
+{% if st.report %}
+{{ commit_block(st.report) }}
+
+<details>
+<summary>Diff stat</summary>
+
+```
+{{ st.report.git.diff_stat }}
+```
+
+</details>
+{% endif %}
+
+---
+
+{% endfor %}
+
+## Demo narrative (3-minute walkthrough)
+
+1. **Setup** — Engineer opens Claude Code in `claude-expense-tracker`, runs dogfood stages via `dogfood.sh`.
+2. **Productive work** — Stages 1–4 build and test the expense CLI; tokens correlate with real diffs.
+3. **Model switch** — Stage 3 Opus refactor shows per-model breakdown in the report.
+4. **Rework story** — Stage 5 fix, Stage 6 churn, Stage 7 revert = cautionary efficiency tale.
+5. **Time slicing** — Stage 8 tiny commit proves audits scope to commit windows, not whole sessions.
+6. **Bug arc** — Stages 12→13→14: ship bug, two fix commits, FIX_KEYWORD flags each time.
+7. **Manager view** — Lead with **What this means for the startup** above; drill into stages on request.
+
+## Files produced
+
+Per-commit audits: `.ccer/reports/<sha>-<timestamp>.md`  
+This scenario trace: `.ccer/reports/scenario-<repo>-<timestamp>.md`
+
+---
+
+*Generated by `ccer scenario` — CCER dogfood playbook*

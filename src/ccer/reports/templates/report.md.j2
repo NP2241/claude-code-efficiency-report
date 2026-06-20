@@ -1,0 +1,56 @@
+# Claude Code Efficiency Report
+
+**{{ r.git.commit.subject }}**
+
+`{{ r.git.commit.short_sha }}` · {{ generated_at }}
+
+## Summary
+
+{{ r.executive_summary }}
+
+{% from "_commit_summary.md.j2" import commit_block %}
+{{ commit_block(r) }}
+
+## Usage detail
+
+{% if r.usage.tokens_by_model %}
+| Model | Tokens | Cost (USD) | Turns |
+|-------|--------|------------|-------|
+{% for m in r.usage.tokens_by_model %}
+| {{ m.model }} | {{ "{:,}".format(m.total_tokens) }} | ${{ "%.4f"|format(m.estimated_cost_usd) }} | {{ m.turn_count }} |
+{% endfor %}
+{% endif %}
+
+## Git evidence
+
+```
+{{ r.git.diff_stat }}
+```
+
+## Rework analysis
+
+{% if r.rework_flags %}
+{% for f in r.rework_flags %}
+- **{{ f.rule_id }}** ({{ f.severity }}): {{ f.message }} — _{{ f.evidence }}_
+{% endfor %}
+{% else %}
+No rework flags for this commit.
+{% endif %}
+
+## Efficiency
+
+{{ r.efficiency.reasoning }}
+
+{% if r.efficiency.opus_overspend_warning %}
+⚠️ Opus overspend: high Opus share on a low-output commit.
+{% endif %}
+
+## Budget
+
+{{ r.budget_recommendation }}
+
+## Diff sample
+
+```
+{{ r.git.diff_patch[:3000] }}
+```

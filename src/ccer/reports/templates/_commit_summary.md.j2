@@ -1,0 +1,29 @@
+{% macro commit_block(r) %}
+**Verdict:** {{ r.verdict }}
+
+| Tokens | Cost | Turns | Sessions | Efficiency |
+|--------|------|-------|----------|------------|
+| {{ "{:,}".format(r.usage.total_tokens) }} | ${{ "%.4f"|format(r.usage.estimated_cost_usd) }} | {{ r.usage.turn_count }} | {{ r.usage.session_count }} | **{{ r.efficiency.tier }}** |
+
+{% if r.usage.tokens_by_model %}
+**Models:** {% for m in r.usage.tokens_by_model %}{{ m.model }} ({{ "{:,}".format(m.total_tokens) }} tok){% if not loop.last %} · {% endif %}{% endfor %}
+{% endif %}
+
+{% if r.usage.model_switches %}
+**Switches:** {% for s in r.usage.model_switches %}{{ s.from_model }}→{{ s.to_model }} at {{ s.at.strftime("%H:%M") }}{% if not loop.last %}; {% endif %}{% endfor %}
+{% endif %}
+
+{% if r.rework_flags %}
+**Rework:** {% for f in r.rework_flags %}`{{ f.rule_id }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{% else %}
+**Rework:** none
+{% endif %}
+
+**Files:** {{ r.work_completed }}
+
+{% if r.usage.warnings %}
+> {% for w in r.usage.warnings %}{{ w }}{% if not loop.last %} · {% endif %}{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{# included by scenario.md.j2 and report.md.j2 #}

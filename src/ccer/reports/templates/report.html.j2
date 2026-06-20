@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CCER — {{ r.git.commit.subject }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1a1a1a; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
+    .tier { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 600; }
+    .tier-High { background: #d1fae5; color: #065f46; }
+    .tier-Medium { background: #fef3c7; color: #92400e; }
+    .tier-Low { background: #fee2e2; color: #991b1b; }
+    table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.4rem 0.6rem; text-align: left; }
+    th { background: #f9fafb; }
+    pre { background: #f3f4f6; padding: 0.75rem; overflow-x: auto; font-size: 0.85rem; }
+    .warn { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 0.5rem 0.75rem; margin: 1rem 0; }
+    .flag { margin: 0.4rem 0; }
+  </style>
+</head>
+<body>
+  <h1>{{ r.git.commit.subject }}</h1>
+  <p><small>{{ generated_at }}</small></p>
+  <p>{{ r.executive_summary }}</p>
+  <p><span class="tier tier-{{ r.efficiency.tier }}">{{ r.efficiency.tier }}</span> {{ r.verdict }}</p>
+
+  {% if r.usage.warnings %}
+  <div class="warn">{% for w in r.usage.warnings %}{{ w }}{% if not loop.last %} · {% endif %}{% endfor %}</div>
+  {% endif %}
+
+  <h2>Usage &amp; cost</h2>
+  <table>
+    <tr><th>Total tokens</th><td>{{ "{:,}".format(r.usage.total_tokens) }}</td></tr>
+    <tr><th>Estimated cost</th><td>${{ "%.4f"|format(r.usage.estimated_cost_usd) }}</td></tr>
+    <tr><th>Sessions</th><td>{{ r.usage.session_count }}</td></tr>
+    <tr><th>Turns</th><td>{{ r.usage.turn_count }}</td></tr>
+  </table>
+
+  {% if r.usage.tokens_by_model %}
+  <h3>Model breakdown</h3>
+  <table>
+    <tr><th>Model</th><th>Tokens</th><th>Cost</th><th>Turns</th></tr>
+    {% for m in r.usage.tokens_by_model %}
+    <tr><td>{{ m.model }}</td><td>{{ "{:,}".format(m.total_tokens) }}</td><td>${{ "%.4f"|format(m.estimated_cost_usd) }}</td><td>{{ m.turn_count }}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if r.usage.model_switches %}
+  <h3>Switch timeline</h3>
+  <ul>
+  {% for s in r.usage.model_switches %}
+    <li>{{ s.at.isoformat() }}: {{ s.from_model }} → {{ s.to_model }}</li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+
+  <h2>Git evidence</h2>
+  <p><code>{{ r.git.commit.short_sha }}</code> · {{ r.git.commit.author_name }} · {{ r.git.commit.committed_at.isoformat() }}</p>
+  <pre>{{ r.git.diff_stat }}</pre>
+
+  <h2>Rework analysis</h2>
+  {% if r.rework_flags %}
+    {% for f in r.rework_flags %}
+    <div class="flag"><strong>{{ f.rule_id }}</strong>: {{ f.message }} <em>({{ f.evidence }})</em></div>
+    {% endfor %}
+  {% else %}
+  <p>None</p>
+  {% endif %}
+
+  <h2>Efficiency</h2>
+  <p>{{ r.efficiency.reasoning }}</p>
+  {% if r.efficiency.opus_overspend_warning %}
+  <div class="warn">Opus overspend: &gt;40% of tokens on a low-output commit.</div>
+  {% endif %}
+
+  <h2>Budget recommendation</h2>
+  <p>{{ r.budget_recommendation }}</p>
+
+  <h2>Evidence</h2>
+  <p>Sessions: {{ r.session_ids | join(", ") if r.session_ids else "none" }}</p>
+</body>
+</html>
