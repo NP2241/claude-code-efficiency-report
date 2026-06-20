@@ -453,9 +453,9 @@ cd ~/Downloads/claude-expense-tracker
 ccer scenario
 ```
 
-Output: `.ccer/reports/scenario-claude-expense-tracker-<timestamp>.md`
+Output: `reports/claude-expense-tracker/scenario-claude-expense-tracker-<timestamp>.md` (in the CCER repo)
 
-Per-commit audits remain at `.ccer/reports/<sha>-<timestamp>.md` (Markdown only — no HTML).
+Per-commit audits: `reports/claude-expense-tracker/<sha>-<timestamp>.md`
 
 `./scripts/dogfood.sh run-all` runs `ccer scenario` automatically at the end.
 

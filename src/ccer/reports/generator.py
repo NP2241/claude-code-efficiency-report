@@ -13,6 +13,7 @@ from ccer.models.git import GitActivity
 from ccer.models.report import EfficiencyReport
 from ccer.models.usage import UsageSummary
 from ccer.models.scenario import ScenarioTrace
+from ccer.paths import reports_dir_for
 from ccer.scenario.insights import build_scenario_insights
 
 
@@ -64,7 +65,7 @@ class ReportGenerator:
 
     def render(self, report: EfficiencyReport, repo_path: Path) -> Path:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-        out_dir = repo_path / ".ccer" / "reports"
+        out_dir = reports_dir_for(repo_path)
         out_dir.mkdir(parents=True, exist_ok=True)
         stem = f"{report.git.commit.short_sha}-{ts}"
 
@@ -78,7 +79,7 @@ class ReportGenerator:
 
     def render_scenario(self, trace: ScenarioTrace) -> Path:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-        out_dir = trace.repo_path / ".ccer" / "reports"
+        out_dir = reports_dir_for(trace.repo_path)
         out_dir.mkdir(parents=True, exist_ok=True)
         md_path = out_dir / f"scenario-{trace.repo_name}-{ts}.md"
         ctx = {
