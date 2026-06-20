@@ -21,9 +21,9 @@ to someone evaluating CCER — an eng manager, a founder, or an investor.
 
 **Actionable takeaways:**
 
-{% for rec in insights.recommendations %}
+{%- for rec in insights.recommendations %}
 - {{ rec }}
-{% endfor %}
+{%- endfor %}
 
 ### What you'd tell an investor or early customer
 
@@ -31,17 +31,17 @@ to someone evaluating CCER — an eng manager, a founder, or an investor.
 
 ### Key findings from this run
 
-{% for finding in insights.key_findings %}
+{%- for finding in insights.key_findings %}
 - {{ finding }}
-{% endfor %}
+{%- endfor %}
 
 ### Where the money went
 
 | Category | Est. cost | Tokens | Share of spend |
 |----------|-----------|--------|----------------|
-{% for b in insights.spend_buckets %}
+{%- for b in insights.spend_buckets %}
 | {{ b.label }} | ${{ "%.2f"|format(b.cost_usd) }} | {{ "{:,}".format(b.tokens) }} | {{ "%.0f"|format(b.pct_of_total) }}% |
-{% endfor %}
+{%- endfor %}
 | **Total (unique commits)** | **${{ "%.2f"|format(trace.total_cost_usd) }}** | **{{ "{:,}".format(trace.total_tokens) }}** | **100%** |
 
 **Efficiency tiers across commits:** {{ insights.efficiency_counts.get("High", 0) }} High · {{ insights.efficiency_counts.get("Medium", 0) }} Medium · {{ insights.efficiency_counts.get("Low", 0) }} Low
